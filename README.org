@@ -1,1 +1,149 @@
 * image-roll.el
+
+This package provides a virtual scroll engine for displaying books/documents in
+Emacs. The main purpose of the package is to provide a continuous scrolling
+feature when viewing documents. This is the successor of the
+[[https://github.com/dalanicolai/pdf-continuous-scroll-mode.el][pdf-continuous-scroll-mode package]]. Making it a new package (instead of an
+update), was necessarry because this package provides a general 'display engine'
+which can be used also by other packages, like doc-view.
+
+This implementation of the image-roll/continuous-scroll is based on a correct
+usage of vscroll, instead of using the vscroll functionality incorrectly
+(causing Emacs crashes when viewing large documents, see [[https://lists.gnu.org/archive/html/emacs-devel/2022-04/msg01234.html][this thread in the
+Emacs devel archives]]). Additionally, this implementation is quite a bit simpler
+and cleaner than previous implementations (e.g. the gap-overlays have been
+eliminated).
+
+The package is meant to be used in combination with some other package that
+provides features to extract and manage the data from the document. An example
+of such a package is the pdf-tools package as provided in the
+[[https://github.com/dalanicolai/pdf-tools/tree/pdf-roll][the pdf-roll branch of my pdf-tools repo]].
+
+The package is written in a way that it supports images/pages of different
+sizes on the same roll (see comment above `image-roll-scroll-forward'). Also
+there is no minumum or maximum on the range of the sizes, and finally, it is
+written to support being displayed in (any number of) multiple windows.
+
+This file provides four buffer local variables that should be set to the
+values of the functions that correctly 'retrieve' the required data from the
+document. See their docstrings and the `image-roll-directory' function (or
+`pdf-scroll.el') for more info.
+
+The core functionality, i.e. the 'scroll' is provided by the
+`image-roll--new-window-function' and `image-roll--redisplay' functions. The
+function `image-roll--new-window-function' should be added to the
+`image-mode-new-window-functions' while the `image-roll--redisplay' should be
+added to the `window-configuration-change-hook' both as buffer local hook
+functions (i.e. by passing a non-nil LOCAL argument to `add-hook'). For the
+`image-mode-new-window-functions' to have effect, the `image-mode-winprops'
+should be initialized by either using `image-mode-setup-winprops' (like in
+the body of `pdf-view-mode') or by initializing the
+`image-mode-winprops-alist' explicitly (by setting its value to nil, like in
+the `image-roll-mode' example).
+
+** Donations
+Donations are more than welcome, as I have been working many weeks/months on
+this feature for zero, while I can not even afford to buy new socks without
+holes. Thank you very much!
+
+** Issues
+
+Most of the functionality works quite fine, but there is at least on known
+major/minor issue (depending how you define it). Namely, when jumping forward to
+some page that is already on the screen, then the pages above it stop being
+displayed. The cause of this 'bug' is well understood, but I don't know how to
+solve it in a clean way. The explanation about the bug can be found [[https://lists.gnu.org/archive/html/emacs-devel/2022-04/msg01289.html][in this
+thread at the Emacs devel mailing archives]]. So those pages 'correctly' get
+'undisplayed' but the new 'current' page is not moved to the top of the screen.
+
+If someone know some 'scrolling configuration' variable that takes care of this,
+then please let me know.
+
+** Todo
+See if we can cache page images in advance.
+
+** Installation and usage
+Because there is still the issue, described just above, left, I am not yet
+publishing this package on some package archive (or submit it to get included
+into Emacs core). Therefore, it is up to you how you install this package, of
+which the simplest way is to clone this repo or download the image-roll.el file,
+and =load= it from you init file.
+
+This does not provide any useful functionality by itself, but instead it is
+meant to be used by some other package (see below).
+
+*** Spacemacs users
+Simply clone the private layer [[https://github.com/dalanicolai/pdf-layer][here]], then restart Spacemacs and update your
+packages. Finally, from within a pdf buffer press ~c~ to activate displaying using
+the image-roll.
+
+*** Doom users
+Don't use the =pdf= module, and add the following code to =packages.el=:
+#+begin_src emacs-lisp
+(package! pdf-tools :recipe
+          (:host github
+                 :repo "dalanicolai/pdf-tools"
+                 :branch "pdf-roll"
+                 :files ("lisp/*.el"
+                         "README"
+                         ("build" "Makefile")
+                         ("build" "server")
+                         (:exclude "lisp/tablist.el" "lisp/tablist-filter.el"))))
+
+(package! image-roll :recipe
+          (:host github
+                 :repo "dalanicolai/image-roll.el"))
+#+end_src
+then manually remove the old pdf-tools directory using:
+#+begin_src bash
+  rm -rf ~/.emacs.d/.local/straight/repos/pdf-tools/
+#+end_src
+
+then run =doom sync= (should we add =-u= here? I am no Doom user).
+
+Finally, from some pdf buffer do =M-x pdf-view-roll-minor-mode= to get continuous
+scrolling.
+
+** Install complementary packages (support)
+*** pdf-tools
+A =pdf-tools= branch that implements =image-roll= support is available in [[https://github.com/dalanicolai/pdf-tools/tree/pdf-roll][the
+pdf-roll branch of my pdf-tools fork]]. It is probably easiest to install it using
+[[https://melpa.org/#/quelpa][quelpa]] or [[https://github.com/raxod502/straight.el][straight]]. I am a Spacemacs user, where I install the package (and also
+image-mode) using the following code:
+#+begin_src emacs-lisp
+  (pdf-tools :location (recipe
+                        :fetcher github
+                        :repo "dalanicolai/pdf-tools"
+                        :branch "pdf-roll"
+                        :files ("lisp/*.el"
+                                "README"
+                                ("build" "Makefile")
+                                ("build" "server")
+                                (:exclude "lisp/tablist.el" "lisp/tablist-filter.el"))))
+  (image-roll :location (recipe
+                         :fetcher github
+                         :repo "dalanicolai/image-roll.el"))
+#+end_src
+From the above code example, I hope you are able to find out how to adapt it for
+quelpa/straight. Contributions, e.g. of installation instructions, are very
+welcome.
+
+After successful installation, from a pdf buffer do =M-x pdf-view-roll-minor-mode=
+to toggle displaying using the image roll.
+
+Because the image-roll package is not yet available from an archive, I am not
+creating a PR at pdf-tools yet.
+
+*** doc-view
+If you would like to also use the image-roll in doc-view, then simply download
+and load [[https://github.com/dalanicolai/emacs/blob/doc-view-image-roll/lisp/doc-view.el][this doc-view.el file]]. After opening a file in =doc-view=, first WAIT
+UNTIL ALL PAGES HAVE BEEN CONVERTED (see page counter at bottom of screen).
+Subsequently do =M-x doc-view-roll-minor-mode= (for doc-view, currently only
+activation of the minor mode has been implemented).
+
+* New keybindings
+| *Key binding* | *Description*                 |
+|-------------+-----------------------------|
+| ~S-next~      | Scroll full screen forward  |
+| ~S-prior~     | Scroll full screen backward |
+(next/prior = PgUp/PgDown)
