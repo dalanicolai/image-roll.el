@@ -20,9 +20,9 @@
 ;; written to support being displayed in (any number of) multiple windows.
 
 ;; The core functionality, i.e. the 'scroll' is provided by the
-;; `image-roll--new-window-function' and `image-roll--redisplay' functions. The
-;; function `image-roll--new-window-function' should be added to the
-;; `image-mode-new-window-functions' while the `image-roll--redisplay' should be
+;; `image-roll-new-window-function' and `image-roll-redisplay' functions. The
+;; function `image-roll-new-window-function' should be added to the
+;; `image-mode-new-window-functions' while the `image-roll-redisplay' should be
 ;; added to the `window-configuration-change-hook' both as buffer local hook
 ;; functions (i.e. by passing a non-nil LOCAL argument to `add-hook'). For the
 ;; `image-mode-new-window-functions' to have effect, the `image-mode-winprops'
@@ -223,7 +223,7 @@ with a space. It size is determined from the image its
     (overlay-put o 'display `(space . (:width (,w) :height (,h))))
     (overlay-put o 'face `(:background "gray"))))
 
-(defun image-roll--new-window-function (winprops)
+(defun image-roll-new-window-function (winprops)
   "Function called first after displaying buffer in a new window.
 If the buffer is newly created, then it does not contain any
 overlay and this function erases the buffer contents, after which
@@ -246,7 +246,7 @@ overlays."
 
         ;; here we only add the 'page' and 'window' overlay-properties, we add
         ;; more properties/information as soon as it becomes available in the
-        ;; 'image-roll--redisplay' function
+        ;; 'image-roll-redisplay' function
         (dotimes (i pages)
           (let ((i (1+ i)))
             (insert " ")
@@ -269,11 +269,11 @@ overlays."
                        (image-roll-overlays))))
       (image-mode-window-put 'overlays ols winprops)))
 
-  ;; initial `image-roll--redisplay' needs to know which page(s) to display
+  ;; initial `image-roll-redisplay' needs to know which page(s) to display
   (setf (image-roll-current-page (car winprops))
         (or (image-roll-current-page (car winprops)) 1)))
 
-(defun image-roll--redisplay (&optional window no-relative-vscroll)
+(defun image-roll-redisplay (&optional window no-relative-vscroll)
   "Redisplay the scroll.
 Besides that this function can be called directly, it should also
 be added to the `window-configuration-change-hook'.
@@ -533,12 +533,12 @@ This function is used for the image-roll-demo."
 (define-derived-mode image-roll-mode special-mode "Image Roll"
   ;; we don't use `(image-mode-setup-winprops)' because it would additionally
   ;; add `image-mode-reapply-winprops' to the
-  ;; `window-configuration-change-hook', but `image-roll--redisplay' already
+  ;; `window-configuration-change-hook', but `image-roll-redisplay' already
   ;; reapplies the vscroll, so we simply initialize the
   ;; `image-mode-winprops-alist' here, and add lines from
-  ;; `image-mode-reapply-winprops' at the start of `image-roll--redisplay'.
-  (add-hook 'window-configuration-change-hook 'image-roll--redisplay nil t)
-  (add-hook 'image-mode-new-window-functions 'image-roll--new-window-function nil t)
+  ;; `image-mode-reapply-winprops' at the start of `image-roll-redisplay'.
+  (add-hook 'window-configuration-change-hook 'image-roll-redisplay nil t)
+  (add-hook 'image-mode-new-window-functions 'image-roll-new-window-function nil t)
   (unless (listp image-mode-winprops-alist)
     (setq image-mode-winprops-alist nil)))
 ;; (add-hook 'window-configuration-change-hook
