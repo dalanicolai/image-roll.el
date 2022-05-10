@@ -46,18 +46,8 @@ Donations are more than welcome, as I have been working many weeks/months on
 this feature for zero, while I can not even afford to buy new socks without
 holes. Thank you very much!
 
-** Issues
-
-Most of the functionality works quite fine, but there is at least on known
-major/minor issue (depending how you define it). Namely, when jumping forward to
-some page that is already on the screen, then the pages above it stop being
-displayed. The cause of this 'bug' is well understood, but I don't know how to
-solve it in a clean way. The explanation about the bug can be found [[https://lists.gnu.org/archive/html/emacs-devel/2022-04/msg01289.html][in this
-thread at the Emacs devel mailing archives]]. So those pages 'correctly' get
-'undisplayed' but the new 'current' page is not moved to the top of the screen.
-
-If someone know some 'scrolling configuration' variable that takes care of this,
-then please let me know.
+** Known issues
+[[https://github.com/dalanicolai/image-roll.el/issues/4]]
 
 ** Todo
 See if we can cache page images in advance.
