@@ -50,7 +50,9 @@ holes. Thank you very much!
 [[https://github.com/dalanicolai/image-roll.el/issues/4]]
 
 ** Todo
-See if we can cache page images in advance.
+- See if we can cache page images in advance.
+- Add support for 'sliced' images (in particular for
+  =pdf-view-set-slice-from-bounding-box=)
 
 ** Installation and usage
 Because there is still the issue, described just above, left, I am not yet
