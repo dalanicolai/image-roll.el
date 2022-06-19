@@ -126,6 +126,9 @@ separation height is twice this value."
 The function should return a list of conses of the form (WIDTH .
 HEIGHT), both numbers.")
 
+;; for now used for djvu only
+(defvar-local image-roll-text-contents nil)
+
 (defvar-local image-roll-set-redisplay-flag-function nil
   "Function that sets the `needs-redisplay' window property.
 Setting this is required for the
@@ -194,6 +197,11 @@ start (this choice was made in order to simplify the scrolling
 logic)"
   `(image-mode-window-get 'page ,window))
 
+(defun image-roll-page-at-current-pos ()
+  (seq-find #'numberp (mapcar (lambda (o)
+                                (overlay-get o 'page))
+                              (overlays-at (point)))))
+
 (defmacro image-roll-displayed-pages (&optional window)
   "Return list of currently displayed pages."
   `(image-mode-window-get 'displayed-pages ,window))
@@ -203,7 +211,7 @@ logic)"
      (* 2 image-roll-vertical-margin)))
 
 (defsubst image-roll-page-to-pos (page)
-  (1- (* 2 page)))
+  (overlay-start (nth (1- page) (image-roll-overlays))))
 
 (defun image-roll-visible-overlays ()
   "Page numbers of currently visible overlays.
@@ -268,10 +276,10 @@ overlays."
         ;; more properties/information as soon as it becomes available in the
         ;; 'image-roll-redisplay' function
         (dotimes (i pages)
-          (let ((i (1+ i)))
-            (insert " ")
-            (let ((o (make-overlay (1- (point)) (point))))
-              (overlay-put o 'page  i)
+          (let ((text (or (nth 5 (nth i image-roll-text-contents)) " ")))
+            (insert text)
+            (let ((o (make-overlay (- (point) (length text)) (point))))
+              (overlay-put o 'page  (1+ i))
               (overlay-put o 'window win)
               (push o overlays))
             (insert "\n")))
@@ -293,7 +301,7 @@ overlays."
   (setf (image-roll-current-page (car winprops))
         (or (image-roll-current-page (car winprops)) 1)))
 
-(defun image-roll-redisplay (&optional window no-relative-vscroll)
+(defun image-roll-redisplay (&optional window force no-relative-vscroll)
   "Redisplay the scroll.
 Besides that this function can be called directly, it should also
 be added to the `window-configuration-change-hook'.
@@ -342,9 +350,10 @@ is a substitute for the `pdf-view-redisplay' function)."
     (dolist (p (image-roll-visible-overlays))
       (apply image-roll-display-page-function
              p
-             (when (eq image-roll-display-page-function
-                       'doc-view-insert-image)
-               `(:width ,doc-view-image-width)))
+             (cond ((eq image-roll-display-page-function
+                        'doc-view-insert-image)
+                    `(:width ,doc-view-image-width))
+                   (papyrus-current-matches '(t)))) ;TODO make image-roll variable
       (push p displayed))
     ;; store displayed images for determining which images to update when update
     ;; is triggered
@@ -358,7 +367,7 @@ is a substitute for the `pdf-view-redisplay' function)."
   ;; we only need to jump to the right page, the vscroll is conserved and if
   ;; required can be set to 0 before the redisplay
   (when-let (p (image-roll-current-page))
-    (goto-char (1- (* 2 p)))
+    (overlay-start (nth (1- p) (image-roll-overlays)))
     ;; (redisplay)
     ;; TODO implement in redisplay, `fractional vscroll' (in page units)
     (image-set-window-vscroll (or (image-mode-window-get 'vscroll)
@@ -398,7 +407,7 @@ is a substitute for the `pdf-view-redisplay' function)."
              (prefix-numeric-value current-prefix-arg)
            (read-number "Page: "))))
   (unless (and (>= page 1)
-               (<= page (count-lines (point-min) (point-max))))
+               (<= page image-roll-last-page))
     (error "No such page: %d" page))
   (unless window
     (setq window
@@ -418,7 +427,8 @@ is a substitute for the `pdf-view-redisplay' function)."
         (run-hooks 'image-roll-change-page-hook))
       (when (window-live-p window)
         (goto-char (image-roll-page-to-pos page))
-        (image-roll-update-displayed-pages))
+        (image-roll-update-displayed-pages)
+        (image-roll-redisplay))
       (when changing-p
         (run-hooks 'image-roll-after-change-page-hook))
       ;; (when changing-p
