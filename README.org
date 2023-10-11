@@ -91,7 +91,7 @@ then manually remove the old pdf-tools directory using:
   rm -rf ~/.emacs.d/.local/straight/repos/pdf-tools/
 #+end_src
 
-then run =doom sync= (should we add =-u= here? I am no Doom user).
+then run =doom sync -u = (if asked to delete origin remote and replace with new remote do so. If given the option to checkout pdf-roll also do this).
 
 Finally, from some pdf buffer do =M-x pdf-view-roll-minor-mode= to get continuous
 scrolling.
